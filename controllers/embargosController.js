@@ -95,11 +95,6 @@ const embargosController = {
                 return res.status(400).json({ message: 'ID de embargo es requerido' });
             }
 
-            // Validación básica de datos
-            if (!embargoData.radicado) {
-                return res.status(400).json({ message: 'El campo radicado es obligatorio' });
-            }
-
             // Asignar el asesor que realiza la modificación
             embargoData.asesor_embargo = embargoData.nombreUsuario || 'Sistema';
 

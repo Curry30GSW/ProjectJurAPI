@@ -214,7 +214,7 @@ const embargosModel = {
             e.estado_embargo = 0`);
       return rows;
     } catch (error) {
-      console.error('Error al obtener los clientes con DataCrédito:', error);
+      console.error('Error al obtener los clientes con Embargos Aceptados:', error);
       throw error;
     }
   },
