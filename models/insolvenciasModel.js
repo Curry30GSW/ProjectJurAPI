@@ -178,7 +178,7 @@ const insolvenciaModel = {
         }
     },
 
-    getClienteInsolByCedula: async (cedula) => {
+    getClienteInsolById: async (id_insolvencia) => {
         const connection = await pool.getConnection();
 
         try {
@@ -238,13 +238,11 @@ const insolvenciaModel = {
                 ) latest ON d.id_insolvencia = latest.id_insolvencia AND d.id_desprendible = latest.max_id
             ) d ON i.id_insolvencia = d.id_insolvencia
             WHERE 
-                c.cedula = ?
+                i.id_insolvencia = ?
             LIMIT 1
-        `, [cedula]);
+        `, [id_insolvencia]);
 
-            if (clienteRows.length === 0) {
-                return null;
-            }
+            if (clienteRows.length === 0) return null;
 
             const cliente = clienteRows[0];
 
@@ -256,19 +254,20 @@ const insolvenciaModel = {
                 audiencias
             WHERE 
                 id_insolvencia = ?
-        `, [cliente.id_insolvencia]);
+        `, [id_insolvencia]);
 
             cliente.audiencias = audienciasRows;
 
             return cliente;
 
         } catch (error) {
-            console.error('Error en getClienteInsolByCedula:', error);
+            console.error('Error en getClienteInsolById:', error);
             throw error;
         } finally {
             connection.release();
         }
     },
+
 
 
 

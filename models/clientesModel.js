@@ -164,15 +164,14 @@ const ClienteModel = {
   buscarPorCedula: async (cedula) => {
     const connection = await pool.getConnection();
     try {
+      // Obtener datos del cliente y datacrédito
       const [clienteRows] = await connection.query(
         `SELECT clientes.*, datacredito.nombreData
-          FROM clientes
-          LEFT JOIN datacredito ON clientes.id_cliente = datacredito.id_cliente
-          WHERE clientes.cedula = ?`,
+        FROM clientes
+        LEFT JOIN datacredito ON clientes.id_cliente = datacredito.id_cliente
+        WHERE clientes.cedula = ?`,
         [cedula]
       );
-
-
 
       if (clienteRows.length === 0) {
         return null;
@@ -192,9 +191,18 @@ const ClienteModel = {
         [cliente.id_cliente]
       );
 
+      // ✅ Obtener pagadurías del cliente
+      const [pagaduriasRows] = await connection.query(
+        `SELECT nombre_pagaduria, valor_pagaduria, descuento_pagaduria 
+       FROM pagadurias_cliente 
+       WHERE id_cliente = ?`,
+        [cliente.id_cliente]
+      );
+
       // Agregar al objeto del cliente
       cliente.referencias_familiares = familiaresRows;
       cliente.referencias_personales = personalesRows;
+      cliente.pagadurias = pagaduriasRows; // puedes usar otro nombre si prefieres
 
       return cliente;
 
@@ -204,6 +212,7 @@ const ClienteModel = {
       connection.release();
     }
   },
+
 
   updateCliente: async (cedula, clienteData) => {
     const connection = await pool.getConnection();
@@ -241,12 +250,17 @@ const ClienteModel = {
         laboral: clienteData.laboral || 'NO APLICA',
         empresa: clienteData.empresa || 'NO APLICA',
         cargo: clienteData.cargo || 'NO APLICA',
-        pagaduria: clienteData.pagaduria || 'NO APLICA',
         salario: clienteData.salario ? parseInt(clienteData.salario) : null,
         desprendible: clienteData.desprendible,
         bienes: clienteData.bienes_inmuebles === 'si' ? 1 : 0,
         foto_perfil: clienteData.foto_perfil,
-        cedula_pdf: clienteData.cedula_pdf
+        cedula_pdf: clienteData.cedula_pdf,
+        fecha_nac: clienteData.fecha_nacimiento || null,
+        edad: clienteData.edad ? parseInt(clienteData.edad) : null,
+        valor_cuota: clienteData.cuota ? parseInt(clienteData.cuota) : null,
+        porcentaje: clienteData.porcentaje ? parseFloat(clienteData.porcentaje) : null,
+        valor_insolvencia: clienteData.valor_insolvencia ? parseInt(clienteData.valor_insolvencia) : null,
+        numero_cuotas: clienteData.numero_cuotas ? parseInt(clienteData.numero_cuotas) : null
       };
 
       // Construir partes de la consulta dinámicamente
@@ -284,6 +298,32 @@ const ClienteModel = {
         'id_referenciaFa'
       );
 
+      // Guardar pagadurías del cliente si existen
+      if (Array.isArray(clienteData.pagadurias)) {
+        // Eliminar todas las pagadurías actuales del cliente
+        await connection.query('DELETE FROM pagadurias_cliente WHERE id_cliente = ?', [id_cliente]);
+
+        // Insertar todas las nuevas pagadurías enviadas desde el frontend
+        for (const pagaduria of clienteData.pagadurias) {
+          const { nombre, valor, descuento } = pagaduria;
+
+          if (nombre && valor != null) {
+            await connection.query(
+              `INSERT INTO pagadurias_cliente 
+          (id_cliente, nombre_pagaduria, valor_pagaduria, descuento_pagaduria)
+         VALUES (?, ?, ?, ?)`,
+              [
+                id_cliente,
+                nombre,
+                parseInt(valor),
+                descuento !== undefined ? parseFloat(descuento) : 0.0
+              ]
+            );
+          }
+        }
+      }
+
+
       await connection.commit();
       return { message: 'Cliente actualizado exitosamente' };
     } catch (error) {
@@ -297,6 +337,52 @@ const ClienteModel = {
       if (connection) connection.release();
     }
   },
+
+  getConteoPorPagaduria: async () => {
+    const [rows] = await pool.query(`
+    SELECT nombre_pagaduria, COUNT(*) AS cantidad
+    FROM pagadurias_cliente
+    GROUP BY nombre_pagaduria
+  `);
+    return rows;
+  },
+
+  getClientesPorPagaduria: async (nombrePagaduria) => {
+    const pagaduriasPrincipales = [
+      'colpensiones',
+      'fopep',
+      'fiduprevisora',
+      'porvenir',
+      'seguros alfa',
+      'secretaria educacion'
+    ];
+
+    let query = '';
+    let params = [];
+
+    if (nombrePagaduria.toLowerCase() === 'otras') {
+      query = `
+      SELECT c.*, p.nombre_pagaduria AS pagaduria
+      FROM clientes c
+      INNER JOIN pagadurias_cliente p ON c.id_cliente = p.id_cliente
+      WHERE LOWER(p.nombre_pagaduria) NOT IN (${pagaduriasPrincipales.map(() => '?').join(', ')});
+    `;
+      params = pagaduriasPrincipales;
+    } else {
+      query = `
+      SELECT c.*, p.nombre_pagaduria AS pagaduria
+      FROM clientes c
+      INNER JOIN pagadurias_cliente p ON c.id_cliente = p.id_cliente
+      WHERE LOWER(p.nombre_pagaduria) = ?;
+    `;
+      params = [nombrePagaduria.toLowerCase()];
+    }
+
+    const [rows] = await pool.query(query, params);
+    return rows;
+  },
+
+
 
 };
 

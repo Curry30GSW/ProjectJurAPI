@@ -162,11 +162,31 @@ const ClienteController = {
           return [];
         }
       };
+      const parsePagadurias = () => {
+        try {
+          if (!req.body.pagadurias) return [];
+
+          if (Array.isArray(req.body.pagadurias)) {
+            return req.body.pagadurias;
+          }
+
+          if (typeof req.body.pagadurias === 'string') {
+            return JSON.parse(req.body.pagadurias);
+          }
+
+          return [];
+        } catch (e) {
+          console.error('Error parsing pagadurias:', e);
+          return [];
+        }
+      };
+
 
       const clienteData = {
         ...req.body,
         referencias_familiares: parseReferences('referencias_familiares'),
-        referencias_personales: parseReferences('referencias_personales')
+        referencias_personales: parseReferences('referencias_personales'),
+        pagadurias: parsePagadurias()
       };
 
 
@@ -211,7 +231,66 @@ const ClienteController = {
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
-  }
+  },
+
+  obtenerConteoPorPagaduria: async (req, res) => {
+    try {
+      // Llamamos al modelo sin agrupar por "otras"
+      const data = await ClienteModel.getConteoPorPagaduria();
+
+      // Pagadurías que quieres considerar específicamente
+      const pagaduriasPermitidas = [
+        'colpensiones',
+        'fopep',
+        'fiduprevisora',
+        'porvenir',
+        'seguros alfa',
+        'secretaria educacion',
+      ];
+
+      const resultado = [];
+      let otras = 0;
+
+      data.forEach(row => {
+        const nombreNormalizado = row.nombre_pagaduria.toLowerCase().trim();
+
+        if (pagaduriasPermitidas.includes(nombreNormalizado)) {
+          resultado.push({
+            nombre_pagaduria: nombreNormalizado,
+            cantidad: row.cantidad
+          });
+        } else {
+          otras += row.cantidad;
+        }
+      });
+
+      if (otras > 0) {
+        resultado.push({
+          nombre_pagaduria: 'otras',
+          cantidad: otras
+        });
+      }
+
+      res.json(resultado);
+    } catch (error) {
+      console.error('Error al obtener el conteo de pagadurías:', error.message);
+      res.status(500).json({ error: 'Error al obtener el conteo de pagadurías' });
+    }
+  },
+
+  obtenerClientesPorPagaduria: async (req, res) => {
+    try {
+      const { nombre } = req.params;
+      const clientes = await ClienteModel.getClientesPorPagaduria(nombre);
+      res.json(clientes);
+    } catch (error) {
+      console.error('Error al obtener clientes por pagaduría:', error.message);
+      res.status(500).json({ error: 'Error al obtener clientes por pagaduría' });
+    }
+  },
+
+
+
 };
 
 

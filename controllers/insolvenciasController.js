@@ -198,28 +198,26 @@ const insolvenciaController = {
         });
     },
 
-    obtenerInsolvenciaPorCedula: async (req, res) => {
-        const { cedula } = req.params;
+    obtenerInsolvenciaPorId: async (req, res) => {
+        const { id } = req.params;
 
-        if (!cedula) {
-            return res.status(400).json({ success: false, message: 'La cédula es requerida.' });
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'El id_insolvencia es requerido.' });
         }
 
         try {
-            const datos = await insolvenciaModel.getClienteInsolByCedula(cedula);
+            const datos = await insolvenciaModel.getClienteInsolById(id);
 
             if (!datos) {
-                return res.status(404).json({ success: false, message: 'No se encontró información para esta cédula.' });
+                return res.status(404).json({ success: false, message: 'No se encontró información para este ID.' });
             }
 
             res.status(200).json({ success: true, data: datos });
         } catch (error) {
-            console.error('Error al obtener insolvencia por cédula:', error);
+            console.error('Error al obtener insolvencia por ID:', error);
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         }
     },
-
-
 
 
 };

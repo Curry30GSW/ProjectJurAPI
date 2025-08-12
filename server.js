@@ -11,6 +11,7 @@ const insolvenciasRoutes = require('./routes/insolvenciasRoutes');
 const embargosRoutes = require('./routes/embargosRoutes');
 const notificacionRoutes = require('./routes/notificacionesRoutes');
 const titulosRoutes = require('./routes/titulosRoutes');
+const sabanaRoutes = require('./routes/sabanaRoutes');
 const methodOverride = require('method-override');
 
 
@@ -25,7 +26,7 @@ app.use(cors({
   origin: "http://127.0.0.1:5501", // Debes usar el frontend correcto
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true  // 🛑 Habilita las cookies en CORS
+  credentials: true
 }));
 
 
@@ -48,6 +49,8 @@ app.use('/api', insolvenciasRoutes);
 app.use('/api', embargosRoutes);
 app.use('/api', notificacionRoutes);
 app.use('/api', titulosRoutes);
+app.use('/api', sabanaRoutes);
+
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

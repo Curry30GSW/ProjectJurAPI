@@ -5,7 +5,6 @@ const path = require('path');
 const fs = require('fs');
 const router = express.Router();
 
-// Primero: usa memoryStorage para leer todo el form-data (incluyendo tipo y cedula)
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {

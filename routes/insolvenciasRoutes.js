@@ -10,7 +10,8 @@ router.get('/clientes-insolvencias', insolvenciaController.listarClientesConInso
 
 router.put('/actualizar-insolvencias', insolvenciaController.actualizarInsolvencia);
 
-router.get('/insolvencia/cedula/:cedula', insolvenciaController.obtenerInsolvenciaPorCedula);
+router.get('/insolvencia/id/:id', insolvenciaController.obtenerInsolvenciaPorId);
+
 
 
 module.exports = router;
