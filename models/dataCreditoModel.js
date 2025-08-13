@@ -78,15 +78,29 @@ const dataCreditoModel = {
             UPDATE datacredito SET area_actual = ? WHERE id_cliente = ?
         `, [nuevaArea, idCliente]);
 
-            // 👉 Normalizamos el valor para asegurar coincidencia
+
             const area = nuevaArea.trim().toUpperCase();
 
-            // Insertar en la tabla correspondiente según el área
+
             if (area === 'CREDITOS') {
+                const [yaExiste] = await pool.query('SELECT id_cliente FROM creditos WHERE id_cliente = ?', [idCliente]);
+                if (yaExiste.length > 0) {
+                    throw new Error(`El cliente ya está en el área ${area}`);
+                }
                 await pool.query('INSERT INTO creditos (id_cliente) VALUES (?)', [idCliente]);
+
             } else if (area === 'EMBARGOS') {
+                const [yaExiste] = await pool.query('SELECT id_cliente FROM embargos WHERE id_cliente = ?', [idCliente]);
+                if (yaExiste.length > 0) {
+                    throw new Error(`El cliente ya está en el área ${area}`);
+                }
                 await pool.query('INSERT INTO embargos (id_cliente) VALUES (?)', [idCliente]);
+
             } else if (area === 'INSOLVENCIAS') {
+                const [yaExiste] = await pool.query('SELECT id_cliente FROM insolvencia WHERE id_cliente = ?', [idCliente]);
+                if (yaExiste.length > 0) {
+                    throw new Error(`El cliente ya está en el área ${area}`);
+                }
                 await pool.query('INSERT INTO insolvencia (id_cliente) VALUES (?)', [idCliente]);
             }
 
@@ -103,10 +117,11 @@ const dataCreditoModel = {
             return nombreCliente;
 
         } catch (error) {
-            console.error('Error en moverArea:', error);
+            // console.error('Error en moverArea:', error);
             throw error;
         }
     },
+
 
     obtenerUltimasNotificaciones: async () => {
         const [resultados] = await pool.query(`

@@ -14,7 +14,8 @@ const embargosModel = {
             estado_embargo,
             e.fecha_expediente,
             e.notificar,
-            e.id_embargos
+            e.id_embargos,
+            e.creada
         FROM 
             clientes c
         JOIN 
@@ -226,19 +227,10 @@ const embargosModel = {
       SET ruta_desprendible = ?, 
           fecha_desprendible = ?, 
           fecha_terminacion = ?, 
-          estado_embargo = ?
+          estado_embargo = ?,
+          titulos = 1
       WHERE id_embargos = ?
     `;
-
-      console.log('🟡 Ejecutando SQL:');
-      console.log(sql);
-      console.log('📦 Valores:', [
-        rutaDocumento,
-        fechaDesprendible,
-        fechaTerminacion,
-        estadoEmbargo,
-        idEmbargo
-      ]);
 
       await pool.query(sql, [
         rutaDocumento,
@@ -253,6 +245,7 @@ const embargosModel = {
       throw error;
     }
   },
+
 
   verificarEmbargosPorCliente: async (id_cliente) => {
     const [rows] = await pool.query('SELECT * FROM embargos WHERE id_cliente = ?', [id_cliente]);

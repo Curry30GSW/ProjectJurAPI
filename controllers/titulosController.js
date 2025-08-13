@@ -32,7 +32,9 @@ const TitulosController = {
                 orden_pagopdf: procesarArchivo(req.files?.orden_pago_pdf),
                 asesor_titulos: req.body.asesor_titulos || 'Asesor no especificado',
                 id_embargos: req.body.id_embargos || null,
-                id_cliente: req.body.id_cliente || null
+                id_cliente: req.body.id_cliente || null,
+                t_ofic_noti: req.body.t_ofic_noti || null,
+                f_juz_noti: req.body.f_juz_noti || null
             };
 
             // Insertar en la base de datos
@@ -100,7 +102,9 @@ const TitulosController = {
                 asesor_titulos,
                 mantener_terminacion_pdf,
                 mantener_aceptacion_pdf,
-                mantener_orden_pdf
+                mantener_orden_pdf,
+                t_ofic_noti,
+                f_juz_noti
             } = req.body;
 
 
@@ -122,7 +126,9 @@ const TitulosController = {
                 orden_pago,
                 orden_pagopdf,
                 asesor_titulos,
-                id_embargos
+                id_embargos,
+                t_ofic_noti: t_ofic_noti || null,
+                f_juz_noti: f_juz_noti || null
             };
 
             const resultado = await TitulosModel.updateTitulo(datos);

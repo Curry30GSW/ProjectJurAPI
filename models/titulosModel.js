@@ -5,7 +5,7 @@ const TitulosModel = {
 
   getAllTitulos: async () => {
     const [rows] = await pool.query(`
-      SELECT 
+    SELECT 
         c.cedula,
         c.nombres,
         c.apellidos,
@@ -15,12 +15,16 @@ const TitulosModel = {
         c.ciudad,
         e.id_embargos,
         e.radicado,
-        t.creado AS creado_titulo
-      FROM embargos e
-      INNER JOIN clientes c ON e.id_cliente = c.id_cliente
-      LEFT JOIN titulos t ON e.id_embargos = t.id_embargos
-      WHERE e.fecha_terminacion IS NOT NULL
-        AND e.fecha_terminacion >= CURRENT_DATE
+        t.creado,
+        t.t_ofic_noti,
+        t.f_juz_noti
+    FROM embargos e
+    INNER JOIN clientes c 
+        ON e.id_cliente = c.id_cliente
+    LEFT JOIN titulos t
+        ON e.id_embargos = t.id_embargos
+    WHERE e.titulos = 1;
+
 `);
     return rows;
   },
@@ -36,7 +40,8 @@ const TitulosModel = {
       orden_pagopdf,
       asesor_titulos,
       id_embargos,
-      creado
+      t_ofic_noti,
+      f_juz_noti
     } = datos;
 
     const query = `
@@ -50,9 +55,11 @@ const TitulosModel = {
       orden_pagopdf,
       asesor_titulos,
       id_embargos,
+      t_ofic_noti,    
+      f_juz_noti,      
       creado
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
   `;
 
     const [result] = await pool.query(query, [
@@ -64,11 +71,14 @@ const TitulosModel = {
       orden_pago,
       orden_pagopdf,
       asesor_titulos,
-      id_embargos
+      id_embargos,
+      t_ofic_noti,
+      f_juz_noti
     ]);
 
     return result;
   },
+
 
   obtenerDatosPorEmbargo: async (id_embargos) => {
     const sql = `
@@ -94,8 +104,7 @@ const TitulosModel = {
     INNER JOIN clientes c ON e.id_cliente = c.id_cliente
     LEFT JOIN titulos t ON t.id_embargos = e.id_embargos
     WHERE e.id_embargos = ?
-      AND e.fecha_terminacion IS NOT NULL
-      AND e.fecha_terminacion >= CURRENT_DATE
+      AND e.titulos = 1
   `;
 
     const [rows] = await pool.query(sql, [id_embargos]);
@@ -111,7 +120,9 @@ const TitulosModel = {
       solicitud_titulos,
       orden_pago,
       orden_pagopdf,
-      id_embargos
+      id_embargos,
+      t_ofic_noti,
+      f_juz_noti
     } = datos;
 
     const query = `
@@ -122,7 +133,9 @@ const TitulosModel = {
       terminacion_juzgpdf = ?,
       solicitud_titulos = ?,
       orden_pago = ?,
-      orden_pagopdf = ?
+      orden_pagopdf = ?,
+      t_ofic_noti = ?,
+      f_juz_noti = ? 
     WHERE id_embargos = ?
   `;
 
@@ -134,8 +147,11 @@ const TitulosModel = {
       solicitud_titulos,
       orden_pago,
       orden_pagopdf,
+      t_ofic_noti,
+      f_juz_noti,
       id_embargos
     ]);
+
 
     return result;
   },

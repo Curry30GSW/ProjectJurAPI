@@ -96,7 +96,7 @@ const embargosController = {
             }
 
             // Asignar el asesor que realiza la modificación
-            embargoData.asesor_embargo = embargoData.nombreUsuario || 'Sistema';
+            embargoData.asesor_embargo = embargoData.asesor_embargo || 'Sistema';
 
             const updated = await embargosModel.updateEmbargo(id_embargos, embargoData);
 

@@ -41,7 +41,7 @@ const dataCreditoController = {
             const cedula = req.body.cedula;
             const nuevaArea = req.body.area;
             const usuario = req.body.usuario;
-            console.log('Cédula recibida en backend:', cedula);
+
 
             if (!cedula || !nuevaArea || !usuario) {
                 return res.status(400).json({ message: 'Faltan datos requeridos.' });
@@ -53,8 +53,7 @@ const dataCreditoController = {
                 message: `El cliente <b>${nombreCliente}</b>, fue trasladado correctamente.`
             });
         } catch (error) {
-            console.error('Error en moverArea:', error);
-            res.status(500).json({ message: 'Error al mover de área.' });
+            res.status(400).json({ message: error.message });
         }
     },
 
