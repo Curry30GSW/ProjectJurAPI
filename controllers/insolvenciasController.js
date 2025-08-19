@@ -38,6 +38,7 @@ const insolvenciaController = {
                 correo_liquidador,
                 pago_liquidador,
                 terminacion,
+                fecha_terminacion,
                 motivo_insolvencia,
                 asesor_insolvencia,
                 datos_desprendible
@@ -117,6 +118,7 @@ const insolvenciaController = {
                         correo_liquidador,
                         pago_liquidador,
                         terminacion,
+                        fecha_terminacion,
                         motivo_insolvencia,
                         asesor_insolvencia,
                         autoliquidador: ruta_autoliquidador,

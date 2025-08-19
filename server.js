@@ -12,6 +12,7 @@ const embargosRoutes = require('./routes/embargosRoutes');
 const notificacionRoutes = require('./routes/notificacionesRoutes');
 const titulosRoutes = require('./routes/titulosRoutes');
 const sabanaRoutes = require('./routes/sabanaRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 const methodOverride = require('method-override');
 
 
@@ -41,6 +42,8 @@ app.get('/', (req, res) => {
 
 // Middleware para servir imágenes estáticas desde /uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+//Rutas
 app.use('/api', clienteRoutes);
 app.use('/auth', authRoutes);
 app.use('/api', uploadsRoutes);
@@ -50,6 +53,8 @@ app.use('/api', embargosRoutes);
 app.use('/api', notificacionRoutes);
 app.use('/api', titulosRoutes);
 app.use('/api', sabanaRoutes);
+app.use('/api', searchRoutes);
+
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
