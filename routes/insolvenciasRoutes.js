@@ -12,6 +12,11 @@ router.put('/actualizar-insolvencias', insolvenciaController.actualizarInsolvenc
 
 router.get('/insolvencia/id/:id', insolvenciaController.obtenerInsolvenciaPorId);
 
+router.get('/insolvencia/parcial-deuda', insolvenciaController.listarClienteParcialODeudas);
+
+router.get('/conteo-parcial-deudas', insolvenciaController.conteoParcialDeudas);
+
+
 
 
 module.exports = router;

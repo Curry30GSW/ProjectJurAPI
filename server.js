@@ -13,6 +13,7 @@ const notificacionRoutes = require('./routes/notificacionesRoutes');
 const titulosRoutes = require('./routes/titulosRoutes');
 const sabanaRoutes = require('./routes/sabanaRoutes');
 const searchRoutes = require('./routes/searchRoutes');
+const carteraRoutes = require('./routes/carteraRoutes');
 const methodOverride = require('method-override');
 
 
@@ -24,7 +25,7 @@ app.use(express.json());
 
 
 app.use(cors({
-  origin: "http://127.0.0.1:5501", // Debes usar el frontend correcto
+  origin: "http://127.0.0.1:5502", // Debes usar el frontend correcto
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
@@ -54,6 +55,7 @@ app.use('/api', notificacionRoutes);
 app.use('/api', titulosRoutes);
 app.use('/api', sabanaRoutes);
 app.use('/api', searchRoutes);
+app.use('/api', carteraRoutes);
 
 
 // Iniciar servidor

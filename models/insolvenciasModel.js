@@ -282,6 +282,54 @@ const insolvenciaModel = {
         }
     },
 
+    getAllClienteParcialOrDeuda: async () => {
+        try {
+            const [rows] = await pool.query(`
+             SELECT 
+                c.id_cliente, 
+                c.nombres, 
+                c.apellidos, 
+                c.cedula, 
+                c.correo,
+                c.foto_perfil,
+                c.valor_insolvencia,
+                i.id_insolvencia,
+                i.terminacion,
+                d.estado_desprendible,
+                d.obs_desprendible,
+                d.fecha_insert
+            FROM 
+                clientes c
+            JOIN 
+                insolvencia i ON c.id_cliente = i.id_cliente
+            JOIN 
+                desprendible d ON i.id_insolvencia = d.id_insolvencia
+            WHERE 
+                d.estado_desprendible IN ('PARCIAL', 'DEUDAS');
+            `);
+            return rows;
+        } catch (error) {
+            console.error('Error al obtener los clientes con Parcial o Deudas:', error);
+            throw error;
+        }
+    },
+
+    getConteoParcialDeudas: async () => {
+        try {
+            const [rows] = await pool.query(`
+            SELECT d.estado_desprendible, COUNT(*) AS cantidad
+            FROM insolvencia i
+            INNER JOIN desprendible d ON i.id_insolvencia = d.id_insolvencia
+            WHERE d.estado_desprendible IN ('PARCIAL', 'DEUDAS')
+            GROUP BY d.estado_desprendible
+        `);
+            return rows;
+        } catch (error) {
+            console.error("Error en getConteoParcialDeudas:", error);
+            throw error;
+        }
+    },
+
 
 
 

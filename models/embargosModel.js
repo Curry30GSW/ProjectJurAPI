@@ -44,7 +44,6 @@ const embargosModel = {
         c.telefono,
         c.ciudad,
         e.id_embargos,
-        -- Usa COALESCE: si hay pagaduría la concatena, si no hay, muestra empresa
         COALESCE(GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', '), c.empresa) AS pagadurias
       FROM 
         clientes c

@@ -16,7 +16,6 @@ const insolvenciaController = {
         }
     },
 
-
     actualizarInsolvencia: (req, res) => {
         uploadPDF(req, res, async (err) => {
             if (err) {
@@ -220,6 +219,84 @@ const insolvenciaController = {
             res.status(500).json({ success: false, message: 'Error interno del servidor.' });
         }
     },
+
+    listarClienteParcialODeudas: async (req, res) => {
+        try {
+            const clientes = await insolvenciaModel.getAllClienteParcialOrDeuda();
+            res.status(200).json(clientes);
+        } catch (error) {
+            console.error('Error en controlador listarClienteParcialODeudas:', error);
+            res.status(500).json({ message: 'Error al obtener los clientes con PARCIAL o DEUDAS' });
+        }
+    },
+
+    obtenerConteoPorPagaduria: async (req, res) => {
+        try {
+            // Llamamos al modelo sin agrupar por "otras"
+            const data = await ClienteModel.getConteoPorPagaduria();
+
+            // Pagadurías que quieres considerar específicamente
+            const pagaduriasPermitidas = [
+                'colpensiones',
+                'fopep',
+                'fiduprevisora',
+                'porvenir',
+                'seguros alfa',
+                'secretaria educacion',
+            ];
+
+            const resultado = [];
+            let otras = 0;
+
+            data.forEach(row => {
+                const nombreNormalizado = row.nombre_pagaduria.toLowerCase().trim();
+
+                if (pagaduriasPermitidas.includes(nombreNormalizado)) {
+                    resultado.push({
+                        nombre_pagaduria: nombreNormalizado,
+                        cantidad: row.cantidad
+                    });
+                } else {
+                    otras += row.cantidad;
+                }
+            });
+
+            if (otras > 0) {
+                resultado.push({
+                    nombre_pagaduria: 'otras',
+                    cantidad: otras
+                });
+            }
+
+            res.json(resultado);
+        } catch (error) {
+            console.error('Error al obtener el conteo de pagadurías:', error.message);
+            res.status(500).json({ error: 'Error al obtener el conteo de pagadurías' });
+        }
+    },
+
+    // insolvenciaController.js
+    conteoParcialDeudas: async (req, res) => {
+        try {
+            const data = await insolvenciaModel.getConteoParcialDeudas();
+
+            // Normalizamos para asegurarnos de que siempre existan ambos (aunque sea 0)
+            const estados = ['PARCIAL', 'DEUDAS'];
+            const resultado = estados.map(e => {
+                const encontrado = data.find(d => d.estado_desprendible === e);
+                return {
+                    estado: e,
+                    cantidad: encontrado ? encontrado.cantidad : 0
+                };
+            });
+
+            res.json(resultado);
+        } catch (error) {
+            console.error("Error en conteoParcialDeudas:", error.message);
+            res.status(500).json({ error: 'Error al obtener conteo de PARCIAL y DEUDAS' });
+        }
+    },
+
 
 
 };
