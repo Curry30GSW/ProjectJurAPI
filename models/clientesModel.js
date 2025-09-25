@@ -69,8 +69,8 @@ const ClienteModel = {
             nombres, apellidos, cedula, cedula_pdf, direccion, telefono, sexo, fecha_nac,
             edad, ciudad, correo, barrio, estado_civil, laboral, empresa, cargo, 
             salario, desprendible, bienes, asesor, foto_perfil, bienes_inmuebles,
-            valor_cuota, porcentaje, valor_insolvencia, numero_cuotas 
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            valor_cuota, porcentaje, valor_insolvencia, numero_cuotas, recibos_publicos
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
       if (clienteData.bienes === 'no') {
@@ -102,11 +102,11 @@ const ClienteModel = {
         clienteData.bienes_inmuebles && clienteData.bienes_inmuebles.trim() !== ''
           ? clienteData.bienes_inmuebles
           : 'NO APLICA',
-
         limpiarValorMonetario(clienteData.valor_cuota),
         limpiarPorcentaje(clienteData.porcentaje),
         limpiarValorMonetario(clienteData.valor_insolvencia),
-        clienteData.numero_cuotas ? parseInt(clienteData.numero_cuotas) : null
+        clienteData.numero_cuotas ? parseInt(clienteData.numero_cuotas) : null,
+        clienteData.recibos_publicos || null,
       ];
 
       const [result] = await connection.query(clienteQuery, clienteValues);
@@ -166,10 +166,17 @@ const ClienteModel = {
     try {
       // Obtener datos del cliente y datacrédito
       const [clienteRows] = await connection.query(
-        `SELECT clientes.*, datacredito.nombreData
-        FROM clientes
-        LEFT JOIN datacredito ON clientes.id_cliente = datacredito.id_cliente
-        WHERE clientes.cedula = ?`,
+        `SELECT 
+          c.*, 
+          d.nombreData,
+          GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', ') AS pagadurias
+      FROM clientes c
+      LEFT JOIN datacredito d 
+          ON c.id_cliente = d.id_cliente
+      LEFT JOIN pagadurias_cliente p 
+          ON c.id_cliente = p.id_cliente
+      WHERE c.cedula = ?
+      GROUP BY c.id_cliente;`,
         [cedula]
       );
 
@@ -362,7 +369,9 @@ const ClienteModel = {
 
     if (nombrePagaduria.toLowerCase() === 'otras') {
       query = `
-      SELECT c.*, p.nombre_pagaduria AS pagaduria
+      SELECT c.*, 
+             p.nombre_pagaduria AS pagaduria,
+             p.valor_pagaduria
       FROM clientes c
       INNER JOIN pagadurias_cliente p ON c.id_cliente = p.id_cliente
       WHERE LOWER(p.nombre_pagaduria) NOT IN (${pagaduriasPrincipales.map(() => '?').join(', ')});
@@ -370,7 +379,9 @@ const ClienteModel = {
       params = pagaduriasPrincipales;
     } else {
       query = `
-      SELECT c.*, p.nombre_pagaduria AS pagaduria
+      SELECT c.*, 
+             p.nombre_pagaduria AS pagaduria,
+             p.valor_pagaduria
       FROM clientes c
       INNER JOIN pagadurias_cliente p ON c.id_cliente = p.id_cliente
       WHERE LOWER(p.nombre_pagaduria) = ?;

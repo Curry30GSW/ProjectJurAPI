@@ -8,6 +8,8 @@ const insolvenciaController = require('../controllers/insolvenciasController');
 
 router.get('/clientes-insolvencias', insolvenciaController.listarClientesConInsolvencia);
 
+router.get('/cliente-insolvencias/:cedula', insolvenciaController.obtenerClientePorCedula);
+
 router.put('/actualizar-insolvencias', insolvenciaController.actualizarInsolvencia);
 
 router.get('/insolvencia/id/:id', insolvenciaController.obtenerInsolvenciaPorId);
@@ -16,6 +18,8 @@ router.get('/insolvencia/parcial-deuda', insolvenciaController.listarClienteParc
 
 router.get('/conteo-parcial-deudas', insolvenciaController.conteoParcialDeudas);
 
+
+router.post('/guardar-insolvencia', insolvenciaController.guardarInsolvencia);
 
 
 

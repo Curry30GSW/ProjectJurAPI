@@ -81,6 +81,7 @@ const ClienteController = {
         porcentaje: req.body.porcentaje ? parseFloat(req.body.porcentaje) : null,
         valor_insolvencia: req.body.valor_insolvencia ? parseInt(req.body.valor_insolvencia.toString().replace(/\D/g, '')) : null,
         numero_cuotas: req.body.numero_cuotas ? parseInt(req.body.numero_cuotas) : null,
+        recibos_publicos: req.body.recibos_publicos || null,
         referencias_personales,
         referencias_familiares,
         pagadurias: pagadurias,

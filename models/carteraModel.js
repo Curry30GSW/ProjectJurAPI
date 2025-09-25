@@ -69,6 +69,7 @@ const carteraModel = {
         c.foto_perfil,
         c.telefono,
         c.ciudad,
+        c.estado,
         t.id_creditos,
         COALESCE(GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', '), c.empresa) AS pagadurias
       FROM 
@@ -415,16 +416,21 @@ const carteraModel = {
             SELECT 
                 c.id_cliente,
                 c.valor_insolvencia,
-                d.estado_desprendible
+                d.estado_desprendible,
+                pc.nombre_pagaduria
             FROM desprendible d
-            INNER JOIN insolvencia i ON d.id_insolvencia = i.id_insolvencia
-            INNER JOIN clientes c ON i.id_cliente = c.id_cliente
+            INNER JOIN insolvencia i 
+                ON d.id_insolvencia = i.id_insolvencia
+            INNER JOIN clientes c 
+                ON i.id_cliente = c.id_cliente
+            LEFT JOIN pagadurias_cliente pc 
+                ON c.id_cliente = pc.id_cliente
             WHERE d.id_insolvencia = ?
-            LIMIT 1
+            LIMIT 1;
         `, [id_insolvencia]);
 
             if (rows.length === 0) throw new Error('No se encontró insolvencia');
-            const { id_cliente, valor_insolvencia, estado_desprendible } = rows[0];
+            const { id_cliente, valor_insolvencia, estado_desprendible, nombre_pagaduria } = rows[0];
 
             if (estado_desprendible !== 'LIMPIO') {
                 return { success: false, message: 'Desprendible no está en estado LIMPIO' };
@@ -439,16 +445,46 @@ const carteraModel = {
                 return { success: false, message: 'Las cuotas ya fueron generadas' };
             }
 
-            const valorCuota = +(valor_insolvencia / 48).toFixed(2);
+            // Determinar valor de cuota como entero
+            const cuotasTotal = 48;
+            const valorCuota = Math.floor(valor_insolvencia / cuotasTotal);
+            const residuo = valor_insolvencia - valorCuota * cuotasTotal;
 
-            // Generar 48 cuotas
+            // Determinar día de pago según pagaduría
+            let diaPago = 10;
+            if (nombre_pagaduria?.toUpperCase() === 'COLPENSIONES') {
+                diaPago = 30;
+            } else if (
+                nombre_pagaduria?.toUpperCase() === 'FOPEP' ||
+                nombre_pagaduria?.toUpperCase() === 'FIDUPREVISORA'
+            ) {
+                diaPago = 25;
+            }
+
             const cuotas = [];
-            for (let i = 1; i <= 48; i++) {
-                cuotas.push([id_cliente, id_insolvencia, i, valorCuota]);
+            const hoy = new Date();
+            const fechaBase = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 1); // primer día del mes siguiente
+
+            for (let i = 1; i <= cuotasTotal; i++) {
+                const fecha = new Date(fechaBase);
+                fecha.setMonth(fechaBase.getMonth() + i - 1);
+                fecha.setDate(diaPago);
+
+                // Ajuste si el mes tiene menos días que diaPago
+                if (fecha.getDate() !== diaPago) {
+                    fecha.setDate(0); // último día del mes anterior = último día del mes actual
+                }
+
+                const fechaSQL = fecha.toISOString().split('T')[0];
+
+                // Ajustar última cuota para sumar residuo
+                let valorFinal = i === cuotasTotal ? valorCuota + residuo : valorCuota;
+
+                cuotas.push([id_cliente, id_insolvencia, i, valorFinal, fechaSQL]);
             }
 
             await connection.query(`
-            INSERT INTO cartera_insolvencia (id_cliente, id_insolvencia, numero_cuota, valor_cuota)
+            INSERT INTO cartera_insolvencia (id_cliente, id_insolvencia, numero_cuota, valor_cuota, fecha_programada)
             VALUES ?
         `, [cuotas]);
 
@@ -462,7 +498,75 @@ const carteraModel = {
         } finally {
             connection.release();
         }
-    }
+    },
+
+
+    getCuotasPendientes: async () => {
+        try {
+            const [rows] = await pool.query(`
+            SELECT DISTINCT 
+                c.id_cliente,
+                c.foto_perfil,
+                c.nombres,
+                c.apellidos,
+                c.cedula,
+                c.telefono,
+                c.valor_insolvencia,
+                (SELECT COUNT(*) 
+                 FROM cartera_insolvencia ci 
+                 WHERE ci.id_cliente = c.id_cliente 
+                 AND ci.estado IN ('PENDIENTE', 'PARCIAL')) as cuotas_pendientes
+            FROM clientes c
+            INNER JOIN cartera_insolvencia ci ON c.id_cliente = ci.id_cliente
+            WHERE ci.estado IN ('PENDIENTE', 'PARCIAL')
+            ORDER BY c.nombres, c.apellidos
+            `);
+            return rows;
+        } catch (error) {
+            console.error("Error al obtener las cuotas pendientes:", error);
+            throw error;
+        }
+    },
+
+    obtenerCuotasPendientes: async (id_cliente) => {
+        try {
+            const [rows] = await pool.query(`
+                SELECT 
+                    ci.id_cuota,
+                    ci.numero_cuota,
+                    ci.valor_cuota,
+                    ci.saldo_pendiente,
+                    ci.fecha_programada,
+                    ci.estado,
+                    c.id_cliente,
+                    c.nombres,
+                    c.apellidos,
+                    c.cedula,
+                    c.foto_perfil,
+                    c.telefono,
+                    c.valor_insolvencia
+                FROM cartera_insolvencia ci
+                INNER JOIN clientes c 
+                    ON ci.id_cliente = c.id_cliente
+                WHERE ci.id_cliente = ?
+                ORDER BY ci.fecha_programada ASC
+            `, [id_cliente]);
+
+            return rows;
+        } catch (error) {
+            console.error("Error al obtener cuotas pendientes:", error);
+            throw error;
+        }
+    },
+
+    actualizarCuota: async ({ id_cuota, estado, saldo_pendiente }) => {
+        return pool.query(
+            `UPDATE cartera_insolvencia 
+             SET estado = ?, saldo_pendiente = ? 
+             WHERE id_cuota = ?`,
+            [estado, saldo_pendiente, id_cuota]
+        );
+    },
 
 
 };

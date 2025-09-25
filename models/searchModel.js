@@ -3,7 +3,7 @@ const pool = require('../config/db');
 // Buscar cliente por cédula
 const getClienteByCedula = (cedula) => {
     return pool.query(`
-        SELECT 
+       SELECT 
             c.id_cliente,
             c.nombres,
             c.apellidos,
@@ -18,12 +18,14 @@ const getClienteByCedula = (cedula) => {
             c.cargo,
             c.foto_perfil,
             c.fecha_vinculo,
-            p.nombre_pagaduria,
-            p.valor_pagaduria
+            c.estado,
+            GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', ') AS nombres_pagadurias,
+            GROUP_CONCAT(p.valor_pagaduria SEPARATOR ', ') AS valores_pagadurias
         FROM clientes c
         LEFT JOIN pagadurias_cliente p 
             ON c.id_cliente = p.id_cliente
         WHERE c.cedula = ?
+        GROUP BY c.id_cliente;
     `, [cedula]);
 };
 
@@ -78,6 +80,56 @@ const getTitulosByClienteId = (idCliente) => {
     `, [idCliente]);
 };
 
+
+const getTarjetasByClienteId = (idCliente) => {
+    return pool.query(`
+        SELECT 
+            id_creditos, 
+            valor_prestado, 
+            interes_prestado, 
+            valor_total, 
+            fecha_prestamo,  
+            asesor, 
+            observacion_opcion, 
+            obs_credito,
+            cred_creado
+        FROM creditos
+        WHERE id_cliente = ?
+    `, [idCliente]);
+};
+
+// Buscar bancos
+const getBancosByClienteId = (idCliente) => {
+    return pool.query(`
+        SELECT 
+            id_banco, 
+            monto_solicitado, 
+            monto_aprobado, 
+            banco, 
+            negociacion, 
+            fecha_banco, 
+            asesor_banco
+        FROM creditos_bancos
+        WHERE id_cliente = ?
+    `, [idCliente]);
+};
+
+// Buscar cuotas de cartera_insolvencia
+const getCuotasInsolvenciaByClienteId = (idCliente) => {
+    return pool.query(`
+        SELECT 
+            numero_cuota, 
+            valor_cuota, 
+            saldo_pendiente, 
+            fecha_programada
+        FROM cartera_insolvencia
+        WHERE id_cliente = ?
+          AND fecha_programada <= CURDATE()
+          AND (estado = 'PENDIENTE' OR estado = 'PARCIAL')
+        ORDER BY numero_cuota ASC
+    `, [idCliente]);
+};
+
 module.exports = {
     getClienteByCedula,
     getEmbargosByClienteId,
@@ -85,5 +137,8 @@ module.exports = {
     getDatacreditoByClienteId,
     getTitulosByClienteId,
     getAudienciasByInsolvenciaId,
-    getDesprendibleByInsolvenciaId
+    getDesprendibleByInsolvenciaId,
+    getTarjetasByClienteId,
+    getBancosByClienteId,
+    getCuotasInsolvenciaByClienteId
 };

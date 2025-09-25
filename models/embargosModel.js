@@ -10,6 +10,7 @@ const embargosModel = {
             c.apellidos, 
             c.cedula, 
             c.foto_perfil,
+            c.estado,
             e.radicado,
             estado_embargo,
             e.fecha_expediente,
@@ -43,6 +44,7 @@ const embargosModel = {
         c.foto_perfil,
         c.telefono,
         c.ciudad,
+        c.estado,
         e.id_embargos,
         COALESCE(GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', '), c.empresa) AS pagadurias
       FROM 
@@ -200,6 +202,7 @@ const embargosModel = {
             c.apellidos, 
             c.cedula, 
             c.foto_perfil,
+            c.estado,
             e.radicado,
             e.estado_embargo,
             e.fecha_expediente,

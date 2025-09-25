@@ -12,38 +12,45 @@ const buscarPersonaPorCedula = async (req, res) => {
 
         const cliente = clienteRows[0];
 
-        // 2. Consultar embargos primero
+        // 2. Consultar embargos
         const [embargosRows] = await searchModel.getEmbargosByClienteId(cliente.id_cliente);
 
-        // 3. Consultar módulos restantes (sin audiencias/desprendible todavía)
-        const [insolvenciaRows, datacreditoRows] = await Promise.all([
+        // 3. Consultar otros módulos en paralelo
+        const [
+            insolvenciaRows,
+            datacreditoRows,
+            tarjetasRows,
+            bancosRows,
+            cuotasRows
+        ] = await Promise.all([
             searchModel.getInsolvenciaByClienteId(cliente.id_cliente).then(([rows]) => rows),
-            searchModel.getDatacreditoByClienteId(cliente.id_cliente).then(([rows]) => rows)
+            searchModel.getDatacreditoByClienteId(cliente.id_cliente).then(([rows]) => rows),
+            searchModel.getTarjetasByClienteId(cliente.id_cliente).then(([rows]) => rows),
+            searchModel.getBancosByClienteId(cliente.id_cliente).then(([rows]) => rows),
+            searchModel.getCuotasInsolvenciaByClienteId(cliente.id_cliente).then(([rows]) => rows)
         ]);
 
-        // 4. Consultar audiencias y desprendible solo si existe insolvencia
+        // 4. Audiencias y desprendible solo si hay insolvencia
         let audienciasRows = [];
         let desprendibleRows = [];
         if (insolvenciaRows.length > 0) {
             const idInsolvencia = insolvenciaRows[0].id_insolvencia;
-
             const [audiencias, desprendible] = await Promise.all([
                 searchModel.getAudienciasByInsolvenciaId(idInsolvencia).then(([rows]) => rows),
                 searchModel.getDesprendibleByInsolvenciaId(idInsolvencia).then(([rows]) => rows)
             ]);
-
             audienciasRows = audiencias;
             desprendibleRows = desprendible;
         }
 
-        // 5. Solo consultar títulos si hay algún embargo con titulos = 1
+        // 5. Títulos si corresponde
         let titulosRows = [];
         if (embargosRows.some(e => e.titulos === 1)) {
             const [rows] = await searchModel.getTitulosByClienteId(cliente.id_cliente);
             titulosRows = rows;
         }
 
-        // 6. Construir resultado
+        // 6. Construir respuesta
         const resultado = {
             cliente,
             modulos: {
@@ -52,7 +59,12 @@ const buscarPersonaPorCedula = async (req, res) => {
                 audiencias: audienciasRows,
                 desprendible: desprendibleRows,
                 datacredito: datacreditoRows,
-                titulos: titulosRows
+                titulos: titulosRows,
+                cartera: {
+                    tarjetas: tarjetasRows,
+                    bancos: bancosRows,
+                    cuotas: cuotasRows
+                }
             },
             encontradoEn: []
         };
@@ -63,6 +75,7 @@ const buscarPersonaPorCedula = async (req, res) => {
         if (desprendibleRows.length > 0) resultado.encontradoEn.push('Desprendible');
         if (datacreditoRows.length > 0) resultado.encontradoEn.push('Datacrédito');
         if (titulosRows.length > 0) resultado.encontradoEn.push('Títulos');
+        if (tarjetasRows.length > 0 || bancosRows.length > 0) resultado.encontradoEn.push('Cartera');
 
         res.json(resultado);
 
@@ -71,5 +84,6 @@ const buscarPersonaPorCedula = async (req, res) => {
         res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
+
 
 module.exports = { buscarPersonaPorCedula };

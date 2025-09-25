@@ -12,6 +12,7 @@ const dataCreditoModel = {
                     c.correo,
                     c.fecha_vinculo,
                     c.foto_perfil,
+                    c.estado,
                     d.nombreData
                 FROM 
                     clientes c

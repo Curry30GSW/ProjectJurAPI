@@ -10,11 +10,11 @@ const storage = multer.diskStorage({
         if (file.fieldname === 'desprendible_pago') folder = 'uploads/desprendible';
         if (file.fieldname === 'data_credito') folder = 'uploads/dataCredito';
         if (file.fieldname === 'bienes_inmuebles[]') folder = 'uploads/bienesInmuebles';
+        if (file.fieldname === 'recibos_publicos_pdf') folder = 'uploads/recibosPublicos';
 
         const absolutePath = path.resolve(folder);
         if (!fs.existsSync(absolutePath)) {
-            fs.mkdirSync(absolutePath, { recursive: true }); // ← estaba mal escrito (te faltó `true`)
-
+            fs.mkdirSync(absolutePath, { recursive: true });
         }
         cb(null, absolutePath);
     },
@@ -27,10 +27,10 @@ const storage = multer.diskStorage({
         if (file.fieldname === 'desprendible_pago') name = `desprendible-${cedula}${path.extname(file.originalname)}`;
         if (file.fieldname === 'data_credito') name = `dataCredito-${cedula}${path.extname(file.originalname)}`;
         if (file.fieldname === 'bienes_inmuebles[]') name = `bienesInmuebles-${cedula}-${Date.now()}${path.extname(file.originalname)}`;
+        if (file.fieldname === 'recibos_publicos_pdf') name = `reciboPublico-${cedula}-${Date.now()}${path.extname(file.originalname)}`;
 
         cb(null, name);
     }
-
 });
 
 const upload = multer({
@@ -48,5 +48,6 @@ module.exports = upload.fields([
     { name: 'cedula_pdf', maxCount: 1 },
     { name: 'desprendible_pago', maxCount: 1 },
     { name: 'data_credito', maxCount: 1 },
-    { name: 'bienes_inmuebles[]', maxCount: 10 }
+    { name: 'bienes_inmuebles[]', maxCount: 10 },
+    { name: 'recibos_publicos_pdf', maxCount: 1 }
 ]);

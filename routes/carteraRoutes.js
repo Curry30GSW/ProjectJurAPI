@@ -12,5 +12,10 @@ router.get('/cliente/:id_cliente', carteraController.obtenerCreditosPorCliente);
 router.get('/cartera/:id_creditos', carteraController.getCreditoById);
 router.get('/cartera-banco/:id_banco', carteraController.getCreditoBancoById);
 router.post('/comisiones', carteraController.getComisionesPorRango);
+router.post('/generar-cuotas/:id_insolvencia', carteraController.generarCuotas);
+router.get("/cuotas/pendientes", carteraController.getCuotasPendientes);
+router.post("/cartera/abonar", carteraController.abonarCuotas);
+router.post("/cuota/actualizar", carteraController.actualizarCuota);
+router.get("/cuotas/pendientes/:id", carteraController.obtenerCuotasPendientes);
 
 module.exports = router;

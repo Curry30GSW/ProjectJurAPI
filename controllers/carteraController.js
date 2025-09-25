@@ -209,6 +209,196 @@ const carteraController = {
             res.status(500).json({ success: false, message: "Error en el servidor" });
         }
     },
+
+    generarCuotas: async (req, res) => {
+        try {
+            const { id_insolvencia } = req.params;
+
+            if (!id_insolvencia) {
+                return res.status(400).json({ success: false, message: 'El id_insolvencia es requerido' });
+            }
+
+            const result = await carteraModel.generarCuotasCartera(id_insolvencia);
+
+            if (!result.success) {
+                return res.status(400).json(result); // errores de validación o duplicado
+            }
+
+            res.status(200).json(result);
+        } catch (error) {
+            console.error('Error en controlador generarCuotas:', error);
+            res.status(500).json({ success: false, message: 'Error interno del servidor' });
+        }
+    },
+
+    getCuotasPendientes: async (req, res) => {
+        try {
+            const cuotas = await carteraModel.getCuotasPendientes();
+            res.json(cuotas);
+        } catch (error) {
+            res.status(500).json({
+                message: "Error al obtener las cuotas pendientes",
+                error: error.message,
+            });
+        }
+    },
+
+    abonarCuotas: async (req, res) => {
+        try {
+            const { id_cliente, monto } = req.body;
+            let restante = parseFloat(monto);
+
+            // Obtener y ORDENAR cuotas pendientes por fecha (más antigua primero)
+            let cuotas = await carteraModel.obtenerCuotasPendientes(id_cliente);
+            cuotas.sort((a, b) => new Date(a.fecha_programada) - new Date(b.fecha_programada));
+
+            if (!cuotas.length) {
+                return res.status(404).json({ success: false, message: "No hay cuotas pendientes" });
+            }
+
+            const hoy = new Date();
+
+            // --- 1. Pagar TODAS las cuotas vencidas primero (en orden cronológico) ---
+            for (let cuota of cuotas) {
+                if (restante <= 0) break;
+
+                // Solo procesar cuotas vencidas no pagadas
+                if (new Date(cuota.fecha_programada) < hoy && cuota.estado !== "PAGADA") {
+                    let saldo = cuota.saldo_pendiente > 0 ? cuota.saldo_pendiente : cuota.valor_cuota;
+
+                    if (restante >= saldo) {
+                        await carteraModel.actualizarCuota({
+                            id_cuota: cuota.id_cuota,
+                            estado: "PAGADA",
+                            saldo_pendiente: 0
+                        });
+                        restante -= saldo;
+                    } else {
+                        await carteraModel.actualizarCuota({
+                            id_cuota: cuota.id_cuota,
+                            estado: "PARCIAL",
+                            saldo_pendiente: saldo - restante
+                        });
+                        restante = 0;
+                        break;
+                    }
+                }
+            }
+
+            // --- 2. Pagar la PRÓXIMA cuota pendiente (cuota corriente) ---
+            // Encuentra la primera cuota pendiente (vencida o no)
+            const cuotaCorriente = cuotas.find(c => c.estado !== "PAGADA");
+
+            if (restante > 0 && cuotaCorriente) {
+                let saldo = cuotaCorriente.saldo_pendiente > 0 ?
+                    cuotaCorriente.saldo_pendiente :
+                    cuotaCorriente.valor_cuota;
+
+                if (restante >= saldo) {
+                    await carteraModel.actualizarCuota({
+                        id_cuota: cuotaCorriente.id_cuota,
+                        estado: "PAGADA",
+                        saldo_pendiente: 0
+                    });
+                    restante -= saldo;
+                } else {
+                    await carteraModel.actualizarCuota({
+                        id_cuota: cuotaCorriente.id_cuota,
+                        estado: "PARCIAL",
+                        saldo_pendiente: saldo - restante
+                    });
+                    restante = 0;
+                }
+            }
+
+            // --- 3. Reducir plazo: pagar cuotas futuras (desde la más lejana) ---
+            if (restante > 0) {
+                // Ordenar cuotas pendientes por fecha (más lejana primero)
+                const cuotasFuturas = cuotas.filter(c =>
+                    new Date(c.fecha_programada) > hoy && c.estado !== "PAGADA"
+                ).sort((a, b) => new Date(b.fecha_programada) - new Date(a.fecha_programada));
+
+                for (let cuota of cuotasFuturas) {
+                    if (restante <= 0) break;
+
+                    let saldo = cuota.saldo_pendiente > 0 ? cuota.saldo_pendiente : cuota.valor_cuota;
+
+                    if (restante >= saldo) {
+                        await carteraModel.actualizarCuota({
+                            id_cuota: cuota.id_cuota,
+                            estado: "PAGADA",
+                            saldo_pendiente: 0
+                        });
+                        restante -= saldo;
+                    } else {
+                        await carteraModel.actualizarCuota({
+                            id_cuota: cuota.id_cuota,
+                            estado: "PARCIAL",
+                            saldo_pendiente: saldo - restante
+                        });
+                        restante = 0;
+                        break;
+                    }
+                }
+            }
+
+            // --- 4. Si aún queda dinero, aplicar como abono a capital ---
+            if (restante > 0) {
+                // Aquí va la lógica para aplicar el abono a capital
+                await carteraModel.registrarAbonoCapital({
+                    id_cliente: id_cliente,
+                    monto: restante,
+                    fecha: new Date()
+                });
+            }
+
+            res.json({
+                success: true,
+                message: "Abono registrado correctamente",
+                restante: restante
+            });
+
+        } catch (err) {
+            console.error("Error al registrar abono:", err);
+            res.status(500).json({ success: false, message: "Error al registrar abono" });
+        }
+    },
+
+    actualizarCuota: async (req, res) => {
+        try {
+            const { id_cuota, estado, saldo_pendiente } = req.body;
+
+            if (!id_cuota || !estado) {
+                return res.status(400).json({ success: false, message: "Faltan parámetros." });
+            }
+
+            await carteraModel.actualizarCuota({ id_cuota, estado, saldo_pendiente });
+
+            res.json({ success: true, message: "Cuota actualizada correctamente" });
+        } catch (err) {
+            console.error("Error al actualizar cuota:", err);
+            res.status(500).json({ success: false, message: "Error en el servidor" });
+        }
+    },
+
+    obtenerCuotasPendientes: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            if (!id) {
+                return res.status(400).json({ error: "El id_cliente es requerido" });
+            }
+
+            const cuotas = await carteraModel.obtenerCuotasPendientes(id);
+
+            // Devolver siempre array
+            res.json(cuotas);
+        } catch (error) {
+            console.error("Error en obtenerCuotasPendientes:", error);
+            res.status(500).json({ error: "Error al obtener cuotas pendientes" });
+        }
+    },
+
 };
 
 module.exports = carteraController;
