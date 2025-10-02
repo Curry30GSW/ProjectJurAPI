@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const TitulosController = require('../controllers/titulosController');
 const { uploadTitulos } = require('../middlewares/multerTitulos');
+const authenticateToken = require('../middlewares/authMiddleware');
 
-router.get('/titulos', TitulosController.getAllTitulos);
+router.get('/titulos', authenticateToken, TitulosController.getAllTitulos);
 router.post('/insert-titulos', (req, res, next) => {
     uploadTitulos(req, res, (err) => {
         if (err) {
@@ -13,7 +14,7 @@ router.post('/insert-titulos', (req, res, next) => {
     });
 }, TitulosController.insertarTitulo);
 
-router.get('/titulos/:id_embargos', TitulosController.obtenerPorEmbargo);
+router.get('/titulos/:id_embargos', authenticateToken, TitulosController.obtenerPorEmbargo);
 
 router.put('/titulos/:id_embargos', (req, res, next) => {
     uploadTitulos(req, res, (err) => {

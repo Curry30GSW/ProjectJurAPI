@@ -3,7 +3,11 @@ const router = express.Router();
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const authorizeRoles = require("../middlewares/authorizeRoles");
+const permisos = require("../permisos");
 const dataCreditoController = require('../controllers/dataCreditoController');
+const authenticateToken = require('../middlewares/authMiddleware');
+
 
 // Configurar multer para guardar archivos en memoria
 const storage = multer.memoryStorage();
@@ -20,10 +24,9 @@ const upload = multer({
     }
 });
 
-router.get('/clientes-datacredito', dataCreditoController.listarClientesConDataCredito);
+router.get('/clientes-datacredito', authenticateToken, authorizeRoles(permisos), dataCreditoController.listarClientesConDataCredito);
 
-
-router.post('/subir-documento', upload.single('file'), async (req, res) => {
+router.post('/subir-documento', authenticateToken, authorizeRoles(permisos), upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         const { cedula } = req.body;
@@ -51,10 +54,9 @@ router.post('/subir-documento', upload.single('file'), async (req, res) => {
     }
 });
 
-router.post('/mover-area', dataCreditoController.moverArea);
+router.post('/mover-area', authenticateToken, authorizeRoles(permisos), dataCreditoController.moverArea);
 
-
-router.get('/notificaciones', dataCreditoController.notificaciones);
+router.get('/notificaciones', authenticateToken, authorizeRoles(permisos), dataCreditoController.notificaciones);
 
 
 module.exports = router;

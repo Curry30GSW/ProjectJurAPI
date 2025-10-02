@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const embargosController = require('../controllers/embargosController');
+const authenticateToken = require('../middlewares/authMiddleware');
 
 // Configurar multer para guardar archivos en memoria
 const storage = multer.memoryStorage();
@@ -20,17 +21,17 @@ const upload = multer({
     }
 });
 
-router.get('/clientes-embargos', embargosController.listarClientesConEmbargos);
+router.get('/clientes-embargos', authenticateToken, embargosController.listarClientesConEmbargos);
 
-router.get('/cliente-embargos/:cedula', embargosController.obtenerClientePorCedula);
+router.get('/cliente-embargos/:cedula', authenticateToken, embargosController.obtenerClientePorCedula);
 
-router.put('/embargo/:id_embargos', embargosController.updateEmbargo);
+router.put('/embargo/:id_embargos', authenticateToken, embargosController.updateEmbargo);
 
-router.get('/embargos/:id', embargosController.getEmbargoPorId);
+router.get('/embargos/:id', authenticateToken, embargosController.getEmbargoPorId);
 
-router.get('/embargo/aceptados', embargosController.listarClientesConEmbargosAceptados);
+router.get('/embargo/aceptados', authenticateToken, embargosController.listarClientesConEmbargosAceptados);
 
-router.post('/subir-desprendible-embargos', upload.single('file'), async (req, res) => {
+router.post('/subir-desprendible-embargos', authenticateToken, upload.single('file'), async (req, res) => {
     try {
         const file = req.file;
         const { id_embargos, estado_embargo } = req.body;
@@ -62,8 +63,8 @@ router.post('/subir-desprendible-embargos', upload.single('file'), async (req, r
     }
 });
 
-router.post('/crear-embargos', embargosController.insertarEmbargo);
+router.post('/crear-embargos', authenticateToken, embargosController.insertarEmbargo);
 
-router.put('/embargos/:id/notificar', embargosController.actualizarNotificar);
+router.put('/embargos/:id/notificar', authenticateToken, embargosController.actualizarNotificar);
 
 module.exports = router;

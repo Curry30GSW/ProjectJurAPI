@@ -10,11 +10,13 @@ const AuthController = {
                 return res.status(400).json({ error: "Usuario y contraseña son requeridos" });
             }
 
-            const userAuth = await authModel.authenticate(user, password); // ✅ DIRECTO
+            const result = await authModel.authenticate(user, password);
 
-            if (!userAuth) {
-                return res.status(401).json({ error: "Usuario o contraseña incorrectos" });
+            if (result.status === "error") {
+                return res.status(401).json({ error: result.message });
             }
+
+            const userAuth = result.user;
 
             const token = jwt.sign(
                 {
@@ -23,18 +25,23 @@ const AuthController = {
                     rol: userAuth.rol,
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: '8h' }
+                { expiresIn: "8h" }
             );
 
-            // Obtener IP limpia
-            const ipCompleta = req.body.ip_usuario || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-            const ip_usuario = ipCompleta.startsWith('::ffff:') ? ipCompleta.replace('::ffff:', '') : ipCompleta;
+            const ipCompleta =
+                req.body.ip_usuario ||
+                req.headers["x-forwarded-for"] ||
+                req.socket.remoteAddress ||
+                "";
+            const ip_usuario = ipCompleta.startsWith("::ffff:")
+                ? ipCompleta.replace("::ffff:", "")
+                : ipCompleta;
 
             await authModel.registrarAuditoria({
                 user: userAuth.name,
                 rol: userAuth.rol,
                 ip_usuario,
-                detalle_actividad: 'Inicio de sesión en el sistema'
+                detalle_actividad: "Inicio de sesión en el sistema",
             });
 
             res.json({

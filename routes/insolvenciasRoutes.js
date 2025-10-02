@@ -4,22 +4,23 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const insolvenciaController = require('../controllers/insolvenciasController');
+const authenticateToken = require('../middlewares/authMiddleware');
 
 
-router.get('/clientes-insolvencias', insolvenciaController.listarClientesConInsolvencia);
+router.get('/clientes-insolvencias', authenticateToken, insolvenciaController.listarClientesConInsolvencia);
 
-router.get('/cliente-insolvencias/:cedula', insolvenciaController.obtenerClientePorCedula);
+router.get('/cliente-insolvencias/:cedula', authenticateToken, insolvenciaController.obtenerClientePorCedula);
 
-router.put('/actualizar-insolvencias', insolvenciaController.actualizarInsolvencia);
+router.put('/actualizar-insolvencias', authenticateToken, insolvenciaController.actualizarInsolvencia);
 
-router.get('/insolvencia/id/:id', insolvenciaController.obtenerInsolvenciaPorId);
+router.get('/insolvencia/id/:id', authenticateToken, insolvenciaController.obtenerInsolvenciaPorId);
 
-router.get('/insolvencia/parcial-deuda', insolvenciaController.listarClienteParcialODeudas);
+router.get('/insolvencia/parcial-deuda', authenticateToken, insolvenciaController.listarClienteParcialODeudas);
 
-router.get('/conteo-parcial-deudas', insolvenciaController.conteoParcialDeudas);
+router.get('/conteo-parcial-deudas', authenticateToken, insolvenciaController.conteoParcialDeudas);
 
 
-router.post('/guardar-insolvencia', insolvenciaController.guardarInsolvencia);
+router.post('/guardar-insolvencia', authenticateToken, insolvenciaController.guardarInsolvencia);
 
 
 

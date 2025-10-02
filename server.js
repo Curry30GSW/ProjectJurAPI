@@ -14,6 +14,7 @@ const titulosRoutes = require('./routes/titulosRoutes');
 const sabanaRoutes = require('./routes/sabanaRoutes');
 const searchRoutes = require('./routes/searchRoutes');
 const carteraRoutes = require('./routes/carteraRoutes');
+const userRoutes = require('./routes/userRoutes')
 const methodOverride = require('method-override');
 
 
@@ -56,6 +57,7 @@ app.use('/api', titulosRoutes);
 app.use('/api', sabanaRoutes);
 app.use('/api', searchRoutes);
 app.use('/api', carteraRoutes);
+app.use('/api', userRoutes);
 
 
 // Iniciar servidor
