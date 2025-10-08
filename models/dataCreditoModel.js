@@ -104,6 +104,14 @@ const dataCreditoModel = {
                 }
                 await pool.query('INSERT INTO insolvencia (id_cliente) VALUES (?)', [idCliente]);
             }
+            else if (area === 'BANCOS') {
+                const [yaExiste] = await pool.query('SELECT id_cliente FROM creditos_bancos WHERE id_cliente = ?', [idCliente]);
+                if (yaExiste.length > 0) {
+                    throw new Error(`El cliente ya está en el área ${area}`);
+                }
+                await pool.query('INSERT INTO creditos_bancos (id_cliente) VALUES (?)', [idCliente]);
+            }
+            
 
             // Obtener nombre del cliente para mostrarlo en notificación
             const [datosCliente] = await pool.query('SELECT nombres FROM clientes WHERE id_cliente = ?', [idCliente]);

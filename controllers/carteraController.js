@@ -69,6 +69,31 @@ const carteraController = {
         }
     },
 
+    getClienteBancoByCedula: async (req, res) => {
+        const { cedula } = req.params; 
+        try {
+            const cliente = await carteraModel.getClienteBancoByCedula(cedula);
+
+            if (!cliente) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Cliente no encontrado'
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                data: cliente
+            });
+        } catch (error) {
+            console.error('Error en getClientelByCedula:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error al obtener el cliente por cédula'
+            });
+        }
+    },
+
     insertarCredito: async (req, res) => {
         try {
             const creditoData = req.body;
@@ -396,6 +421,48 @@ const carteraController = {
         } catch (error) {
             console.error("Error en obtenerCuotasPendientes:", error);
             res.status(500).json({ error: "Error al obtener cuotas pendientes" });
+        }
+    },
+
+    marcarCreditoPagado: async (req, res) => {
+        try {
+            const { id_banco } = req.params;
+
+            if (!id_banco) {
+                return res.status(400).json({ message: 'ID de crédito inválido' });
+            }
+
+            const actualizado = await carteraModel.marcarComoPagado(id_banco);
+
+            if (!actualizado) {
+                return res.status(404).json({ message: 'Crédito no encontrado o ya está pagado' });
+            }
+
+            res.status(200).json({ message: 'Crédito marcado como pagado correctamente' });
+        } catch (error) {
+            console.error('Error en marcarCreditoPagado:', error);
+            res.status(500).json({ message: 'Error del servidor', error: error.message });
+        }
+    },
+
+    marcarCreditoTarjetaPagado: async (req, res) => {
+        try {
+            const { id_creditos } = req.params;
+
+            if (!id_creditos) {
+                return res.status(400).json({ message: 'ID de crédito inválido' });
+            }
+
+            const actualizado = await carteraModel.marcarComoPagadoTarjeta(id_creditos);
+
+            if (!actualizado) {
+                return res.status(404).json({ message: 'Crédito no encontrado o ya está pagado' });
+            }
+
+            res.status(200).json({ message: 'Crédito marcado como pagado correctamente' });
+        } catch (error) {
+            console.error('Error en marcarCreditoPagado:', error);
+            res.status(500).json({ message: 'Error del servidor', error: error.message });
         }
     },
 

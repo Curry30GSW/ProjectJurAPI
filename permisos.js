@@ -21,6 +21,7 @@ module.exports = {
     "GET /api/clientes-cartera": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
     "GET /api/clientes-cartera-banco": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
     "GET /api/clientes-cartera/:cedula": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
+    "GET /api/clientes-cartera-bancos/:cedula": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
     "GET /api/cliente/:id_cliente": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
     "GET /api/cartera/:id_creditos": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
     "GET /api/cartera-banco/:id_banco": ["controlTotal", "admin", "cartera", "embargos", "insolvencia"],
@@ -34,6 +35,8 @@ module.exports = {
     "POST /api/generar-cuotas/:id_insolvencia": ["controlTotal", "admin", "cartera", "insolvencia"],
     "POST /api/cartera/abonar": ["controlTotal", "admin", "cartera"],
     "POST /api/cuota/actualizar": ["controlTotal", "admin", "cartera"],
+    "PUT /api/creditos-banco/marcar-pagado/:id_banco": ["controlTotal", "admin", "cartera"],
+    "PUT /api/creditos-tarjeta/marcar-pagado/:id_banco": ["controlTotal", "admin", "cartera"],
 
 
     // ------------------ CLIENTES ------------------

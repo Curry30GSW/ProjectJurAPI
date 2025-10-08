@@ -7,6 +7,7 @@ const authenticateToken = require('../middlewares/authMiddleware');
 router.get('/clientes-cartera', authenticateToken, carteraController.getAllClienteCartera);
 router.get('/clientes-cartera-banco', authenticateToken, carteraController.getAllClienteCarteraBanco);
 router.get('/clientes-cartera/:cedula', authenticateToken, carteraController.getClientelByCedula);
+router.get('/clientes-cartera-banco/:cedula', authenticateToken, carteraController.getClientelByCedula);
 router.post('/creditos/crear', authenticateToken, carteraController.insertarCredito);
 router.post('/creditos-banco/crear', authenticateToken, carteraController.insertarCreditoBanco);
 router.get('/cliente/:id_cliente', authenticateToken, carteraController.obtenerCreditosPorCliente);
@@ -18,5 +19,7 @@ router.get("/cuotas/pendientes", authenticateToken, carteraController.getCuotasP
 router.post("/cartera/abonar", authenticateToken, carteraController.abonarCuotas);
 router.post("/cuota/actualizar", authenticateToken, carteraController.actualizarCuota);
 router.get("/cuotas/pendientes/:id", authenticateToken, carteraController.obtenerCuotasPendientes);
+router.put('/creditos-banco/marcar-pagado/:id_banco', carteraController.marcarCreditoPagado);
+router.put('/creditos-tarjeta/marcar-pagado/:id_creditos', carteraController.marcarCreditoTarjetaPagado);
 
 module.exports = router;

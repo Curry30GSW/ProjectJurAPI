@@ -16,7 +16,8 @@ const carteraModel = {
             t.fecha_prestamo,
             t.observacion_opcion,
             t.obs_credito,
-            t.id_cliente
+            t.id_cliente,
+            t.tarjeta_pagado
         FROM 
             clientes c
         JOIN 
@@ -43,14 +44,15 @@ const carteraModel = {
             b.banco,
             b.negociacion,
             b.fecha_banco,
-            b.asesor_banco
+            b.asesor_banco,
+            b.pagado
         FROM 
             clientes c
         JOIN
             creditos_bancos b ON c.id_cliente = b.id_cliente`);
             return rows;
         } catch (error) {
-            console.error('Error al obtener los clientes con DataCrédito:', error);
+            console.error('Error al obtener los clientes con que están en bancos:', error);
             throw error;
         }
     },
@@ -94,6 +96,48 @@ const carteraModel = {
             connection.release();
         }
     },
+
+
+    getClienteBancoByCedula: async (cedula) => {
+        const connection = await pool.getConnection();
+        try {
+            const [rows] = await connection.query(`
+       SELECT 
+        c.id_cliente, 
+        c.nombres, 
+        c.apellidos, 
+        c.cedula, 
+        c.correo,
+        c.fecha_vinculo,
+        c.foto_perfil,
+        c.telefono,
+        c.ciudad,
+        c.estado,
+        t.id_banco,
+        COALESCE(GROUP_CONCAT(p.nombre_pagaduria SEPARATOR ', '), c.empresa) AS pagadurias
+      FROM 
+        clientes c
+      JOIN 
+        creditos_bancos t ON c.id_cliente = t.id_cliente
+      LEFT JOIN 
+        pagadurias_cliente p ON c.id_cliente = p.id_cliente
+      WHERE 
+        c.cedula = ?
+      GROUP BY 
+        c.id_cliente, c.nombres, c.apellidos, c.cedula, c.correo,
+        c.fecha_vinculo, c.foto_perfil, c.telefono, c.ciudad, t.id_banco, c.empresa
+      LIMIT 1;
+      `, [cedula]);
+
+            return rows[0];
+        } catch (error) {
+            console.error('Error al obtener el cliente por cédula:', error);
+            throw error;
+        } finally {
+            connection.release();
+        }
+    },
+
 
     verificarCreditosPorCliente: async (id_cliente) => {
         const [rows] = await pool.query('SELECT * FROM creditos WHERE id_cliente = ?', [id_cliente]);
@@ -309,7 +353,6 @@ const carteraModel = {
                     creditoData.banco,
                     creditoData.negociacion,
                     creditoData.asesor_banco,
-                    creditoData.credb_creado,
                     idActualizar
                 ]);
 
@@ -504,7 +547,7 @@ const carteraModel = {
     getCuotasPendientes: async () => {
         try {
             const [rows] = await pool.query(`
-            SELECT DISTINCT 
+           SELECT 
                 c.id_cliente,
                 c.foto_perfil,
                 c.nombres,
@@ -512,14 +555,14 @@ const carteraModel = {
                 c.cedula,
                 c.telefono,
                 c.valor_insolvencia,
-                (SELECT COUNT(*) 
-                 FROM cartera_insolvencia ci 
-                 WHERE ci.id_cliente = c.id_cliente 
-                 AND ci.estado IN ('PENDIENTE', 'PARCIAL')) as cuotas_pendientes
+                SUM(CASE WHEN ci.estado IN ('PENDIENTE', 'PARCIAL') THEN 1 ELSE 0 END) AS cuotas_pendientes, 
+                COUNT(ci.id_cuota) AS total_cuotas
             FROM clientes c
             INNER JOIN cartera_insolvencia ci ON c.id_cliente = ci.id_cliente
-            WHERE ci.estado IN ('PENDIENTE', 'PARCIAL')
-            ORDER BY c.nombres, c.apellidos
+            GROUP BY 
+                c.id_cliente, c.foto_perfil, c.nombres, c.apellidos, 
+                c.cedula, c.telefono, c.valor_insolvencia
+            ORDER BY c.nombres, c.apellidos;
             `);
             return rows;
         } catch (error) {
@@ -566,6 +609,34 @@ const carteraModel = {
              WHERE id_cuota = ?`,
             [estado, saldo_pendiente, id_cuota]
         );
+    },
+
+    marcarComoPagado: async (id_banco) => {
+        try {
+            const [result] = await pool.query(
+                `UPDATE creditos_bancos SET pagado = 1 WHERE id_banco = ?`,
+                [id_banco]
+            );
+
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error al marcar como pagado:', error);
+            throw error;
+        }
+    },
+
+    marcarComoPagadoTarjeta: async (id_creditos) => {
+        try {
+            const [result] = await pool.query(
+                `UPDATE creditos SET tarjeta_pagado = 1 WHERE id_creditos = ?`,
+                [id_creditos]
+            );
+
+            return result.affectedRows > 0;
+        } catch (error) {
+            console.error('Error al marcar como pagado:', error);
+            throw error;
+        }
     },
 
 
